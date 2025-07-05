@@ -12,9 +12,6 @@ Este projeto automatiza a manipulação de planilhas Google Sheets usando comand
 2. Configure as credenciais do Google Sheets, OpenAI e CoinGecko.
 3. Siga os exemplos em `docs/exemplos-comandos.md`.
 
-## Fluxo principal
-![Fluxo do projeto](docs/fluxo.png)
-
 ## Documentação detalhada
 Veja em [docs/explicacao-fluxo.md](docs/explicacao-fluxo.md)
 
