@@ -1,0 +1,1427 @@
+{
+  "name": "Google Sheets AI Agent Geanny Teste 1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        720
+      ],
+      "id": "4308ed8b-5b7a-440b-b3fb-63fa34a0ee98",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7ff0705b-a6c7-4437-a4bc-cf843f724bf5",
+              "leftValue": "={{ $json.acao }}",
+              "rightValue": "filtrar",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1240,
+        700
+      ],
+      "id": "e8e7f326-3222-4be1-b6dc-e65650f827c0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o texto JSON do campo \"output\"\nlet resposta = $json.output || '';\n\ntry {\n  resposta = resposta.trim();\n  // Se vier como array\n  if (resposta.startsWith('[')) {\n    return JSON.parse(resposta).map(obj => ({ json: obj }));\n  }\n  // Se vier como objeto\n  if (resposta.startsWith('{')) {\n    return [{ json: JSON.parse(resposta) }];\n  }\n  throw new Error('Formato inesperado da resposta da IA');\n} catch (e) {\n  throw new Error('Falha ao fazer parse do JSON da IA: ' + e.message);\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        720
+      ],
+      "id": "f840a42c-16d2-45eb-8d43-009c5d69f7c3",
+      "name": "Parse Json IA"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "114d9f42-0670-4a3f-a2be-665cf095a8d0",
+              "name": "comando",
+              "value": "A pessoa de ID 204 troca a moeda para monero",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        720
+      ],
+      "id": "6613fff7-3a89-4dd4-86b4-b2cd8aea082a",
+      "name": "Comando"
+    },
+    {
+      "parameters": {
+        "resource": "assistant",
+        "operation": "create",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "name": "Assistente Interpretador",
+        "description": "Interpretar comando sobre uma planilha de pessoas.",
+        "instructions": "Você é um agente de automação que interpreta comandos em linguagem natural para manipular dados de uma planilha.\nSempre responda SOMENTE com um objeto JSON válido, sem comentários ou explicações.\nAnalise o comando do usuário e retorne os parâmetros estruturados conforme o tipo de ação solicitada.\n\n1. Para comandos de atualização de dados (ex: “A pessoa de ID 202 troca o carro para Honda”):\n\n{\n  \"acao\": \"atualizar\",\n  \"criterio\": \"ID\", // ou \"Nome\", \"Cidade\", \"Skill\", etc.\n  \"valorBusca\": \"202\",\n  \"campoAtualizar\": \"Car\",\n  \"novoValor\": \"Honda\"\n}\n\n2. Para comandos de filtro (busca/listagem) (ex: “Quais pessoas têm conhecimento em JavaScript e moram em São Paulo?”):\n{\n  \"acao\": \"filtrar\",\n  \"skill\": \"JavaScript\",\n  \"cidade\": \"São Paulo\"\n}\n\n3. Para comandos de adicionar skill (ex: “Adicione Excel para Amanda”):\n\n{\n  \"acao\": \"adicionar_skill\",\n  \"nome\": \"Amanda\",\n  \"skill\": \"Excel\"\n}\n\n4. Para comandos de remover skill (ex: “Remova Zapier de todos”):\n\n{\n  \"acao\": \"remover_skill\",\n  \"skill\": \"Zapier\"\n}\n\nSe não conseguir extrair parâmetros, retorne:\n{ \"erro\": \"Comando não reconhecido\" }\n\nIMPORTANTE:  \nNunca use nomes de campos iguais aos da planilha (exemplo: \"Car\", \"Skills\", \"City of Origin\") nos parâmetros do comando.  \nSempre use \"carro\", \"skill\", \"cidade\" (em minúsculo e em português) para os parâmetros do comando.\nMoeda é igual a ao dado Currency, e cotação é Price.\n\nFrase: {{$json[\"comando\"]}}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        160,
+        720
+      ],
+      "id": "0da1b1d9-f20f-49b7-ad92-c27004958788",
+      "name": "Criar um assistente IA",
+      "credentials": {
+        "openAiApi": {
+          "id": "4mGgHRrYaSOtqIef",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "assistant",
+        "assistantId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "prompt": "define",
+        "text": "={{ $('Comando').item.json.comando }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        320,
+        720
+      ],
+      "id": "d4b6344e-8ffe-4065-877f-d589648bc56a",
+      "name": "Retornar parâmetros",
+      "credentials": {
+        "openAiApi": {
+          "id": "4mGgHRrYaSOtqIef",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "A1:G7"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        860,
+        580
+      ],
+      "id": "5c4319cf-ba05-4b3f-bc44-79c18cd29f8a",
+      "name": "Obter linha(s) na planilha",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1060,
+        700
+      ],
+      "id": "db57aee7-6edd-4f1b-bf44-3e616e9a2c30",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst parametros = items[items.length - 1].json;\nconst linhas = items.slice(0, items.length - 1);\n\nlet criterio = parametros.criterio || '';\nlet valorBusca = parametros.valorBusca || '';\nlet campoAtualizar = parametros.campoAtualizar || '';\nlet novoValor = parametros.novoValor || '';\n\nif (parametros.acao === 'adicionar_skill' || parametros.acao === 'remover_skill') {\n  if (parametros.valorBusca && parametros.criterio) {\n    criterio = parametros.criterio;\n    valorBusca = parametros.valorBusca;\n  } else if (parametros.nome) {\n    criterio = 'nome';\n    valorBusca = parametros.nome;\n  } else if (parametros.id) {\n    criterio = 'id';\n    valorBusca = parametros.id;\n  }\n  campoAtualizar = 'Skills';\n  novoValor = parametros.skill || '';\n}\n\nconst traducoes = {\n  \"carro\": \"Car\",\n  \"nome\": \"Name\",\n  \"cidade de origem\": \"City of Origin\",\n  \"skills\": \"Skills\",\n  \"cidade\": \"City of Origin\"\n};\n\nconst nomeColuna = traducoes[campoAtualizar.toLowerCase()] || campoAtualizar;\n\n// Adicionar skill a todos se não houver critério\nif (parametros.acao === 'adicionar_skill' && !criterio && !valorBusca) {\n  let resultados = [];\n  for (let i = 0; i < linhas.length; i++) {\n    const registro = linhas[i].json;\n    let skillsAtuais = (registro.Skills || '')\n      .split(',')\n      .map(s => s.trim())\n      .filter(Boolean);\n\n    // Adiciona skill apenas se não existir (case-insensitive)\n    if (!skillsAtuais.map(s => s.toLowerCase()).includes(novoValor.toLowerCase())) {\n      skillsAtuais.push(novoValor);\n    }\n\n    // Garante que não fique apenas uma vírgula\n    const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n    resultados.push({\n      json: {\n        row_number: i + 2,\n        Skills: skillsStr\n      }\n    });\n  }\n  return resultados;\n}\n\n// Remover skill de todos se não houver critério\nif (parametros.acao === 'remover_skill' && !criterio && !valorBusca) {\n  let resultados = [];\n  for (let i = 0; i < linhas.length; i++) {\n    const registro = linhas[i].json;\n    let skillsAtuais = (registro.Skills || '')\n      .split(',')\n      .map(s => s.trim())\n      .filter(Boolean);\n\n    // Remove a skill (case-insensitive)\n    skillsAtuais = skillsAtuais.filter(\n      s => s.toLowerCase() !== novoValor.toLowerCase()\n    );\n\n    const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n    resultados.push({\n      json: {\n        row_number: i + 2,\n        Skills: skillsStr\n      }\n    });\n  }\n  return resultados;\n}\n\n// Busca por registro específico\nlet linhaEncontrada = null;\nlet registroEncontrado = null;\n\nfor (let i = 0; i < linhas.length; i++) {\n  const registro = linhas[i].json;\n  if (criterio.toLowerCase() === \"id\" && String(registro.ID) === String(valorBusca)) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n  if (\n    criterio.toLowerCase() === \"nome\" &&\n    registro[\"Name\"] &&\n    registro[\"Name\"].toLowerCase().includes(valorBusca.toLowerCase())\n  ) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n  if (criterio.toLowerCase() === \"cidade\" && registro[\"City of Origin\"] === valorBusca) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n  if (criterio.toLowerCase() === \"skill\" && registro.Skills && registro.Skills.includes(valorBusca)) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n}\n\nif (linhaEncontrada === null && (criterio || valorBusca)) {\n  throw new Error('Registro não encontrado');\n}\n\n// Lógica especial para remover skill de um registro específico\nif (parametros.acao === 'remover_skill' && registroEncontrado) {\n  let skillsAtuais = (registroEncontrado.Skills || '')\n    .split(',')\n    .map(s => s.trim())\n    .filter(Boolean);\n\n  skillsAtuais = skillsAtuais.filter(\n    s => s.toLowerCase() !== novoValor.toLowerCase()\n  );\n\n  const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n  return [{\n    json: {\n      row_number: linhaEncontrada,\n      Skills: skillsStr\n    }\n  }];\n}\n\n// Lógica para adicionar skill de um registro específico\nif (parametros.acao === 'adicionar_skill' && registroEncontrado) {\n  let skillsAtuais = (registroEncontrado.Skills || '')\n    .split(',')\n    .map(s => s.trim())\n    .filter(Boolean);\n\n  if (!skillsAtuais.map(s => s.toLowerCase()).includes(novoValor.toLowerCase())) {\n    skillsAtuais.push(novoValor);\n  }\n\n  const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n  return [{\n    json: {\n      row_number: linhaEncontrada,\n      Skills: skillsStr\n    }\n  }];\n}\n\n// Para as outras ações, mantém o padrão\nif (linhaEncontrada !== null) {\n  let resultado = {\n    row_number: linhaEncontrada\n  };\n  resultado[nomeColuna] = novoValor;\n  return [{ json: resultado }];\n}\n\n// Caso não caia em nenhum dos casos acima, retorna erro\nthrow new Error('Ação não reconhecida ou parâmetros insuficientes');\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        820
+      ],
+      "id": "97c93a57-3967-42e2-b15e-c092cd91af0f",
+      "name": "Localizar linha para atualização"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Car",
+              "displayName": "Car",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1620,
+        820
+      ],
+      "id": "147f0715-aec0-47dc-8452-45f673a79de6",
+      "name": "Atualizar",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst resultados = [];\n\n// Para cada registro da planilha, já enriquecido com os parâmetros do comando:\nfor (let i = 0; i < items.length; i++) {\n  const registro = items[i].json;\n\n  // Parâmetros do comando (vindos do Merge)\n  const skill = (registro.skill || '').toLowerCase().trim();\n  const cidade = (registro.cidade || '').toLowerCase().trim();\n  const carro = (registro.carro || '').toLowerCase().trim();\n\n  // Dados reais da planilha\n  const skills = (registro.Skills || '')\n    .split(',')\n    .map(s => s.trim().toLowerCase());\n  const cidadeLinha = (registro['City of Origin'] || '').toLowerCase().trim();\n  const carroLinha = (registro.Car || '').toLowerCase().trim();\n\n  // Filtro dinâmico: só retorna se todos os critérios preenchidos forem atendidos\n  if (\n    (!skill || skills.includes(skill)) &&\n    (!cidade || cidadeLinha === cidade) &&\n    (!carro || carroLinha === carro)\n  ) {\n    resultados.push(registro);\n  }\n}\n\nreturn resultados.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        600
+      ],
+      "id": "07e5f356-75cb-48ce-a423-3b5247347933",
+      "name": "Filtrar"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "MinhaTabela"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1800,
+        820
+      ],
+      "id": "bdf24d0b-6215-4c15-b8f6-58de13e45638",
+      "name": "Obter Planilha Atualizada",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.coingecko.com/api/v3/simple/price?ids={{ $json[\"Currency\"].toLowerCase() }}&vs_currencies=brl&x_cg_demo_api_key=CG-ysmCHiNbHmHmdXk9XD5csPum",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2040,
+        700
+      ],
+      "id": "e08776da-24a9-4f61-9592-f8efea28da99",
+      "name": "API CoinGecko"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Price": "={{ $json.Price }}",
+            "row_number": "={{ $json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Car",
+              "displayName": "Car",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "City of Origin",
+              "displayName": "City of Origin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Skills",
+              "displayName": "Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Price",
+              "displayName": "Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2600,
+        800
+      ],
+      "id": "75ffe21b-5ad9-401e-9ed1-1f3d3a523bbb",
+      "name": "Atualizar moedas",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const moeda = item.json.Currency.toLowerCase();\n  const price = item.json[moeda] && item.json[moeda].brl ? item.json[moeda].brl : 0;\n\n  return {\n    json: {\n      row_number: item.json.row_number,\n      Price: price\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        800
+      ],
+      "id": "19241fd8-ac24-4854-b94f-c5650db25e3c",
+      "name": "Atualização de preço"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2820,
+        600
+      ],
+      "id": "4e601311-ad99-4d8d-acae-f594fb0740af",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2260,
+        800
+      ],
+      "id": "d32de914-5193-4d6f-b45a-70bf64d72a47",
+      "name": "Merge moedas"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Comando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Filtrar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Localizar linha para atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Json IA": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Obter linha(s) na planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comando": {
+      "main": [
+        [
+          {
+            "node": "Criar um assistente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar um assistente IA": {
+      "main": [
+        [
+          {
+            "node": "Retornar parâmetros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retornar parâmetros": {
+      "main": [
+        [
+          {
+            "node": "Parse Json IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter linha(s) na planilha": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Localizar linha para atualização": {
+      "main": [
+        [
+          {
+            "node": "Atualizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar": {
+      "main": [
+        [
+          {
+            "node": "Obter Planilha Atualizada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter Planilha Atualizada": {
+      "main": [
+        [
+          {
+            "node": "API CoinGecko",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge moedas",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "API CoinGecko": {
+      "main": [
+        [
+          {
+            "node": "Merge moedas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]{
+  "name": "Google Sheets AI Agent Geanny Teste 1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        720
+      ],
+      "id": "4308ed8b-5b7a-440b-b3fb-63fa34a0ee98",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7ff0705b-a6c7-4437-a4bc-cf843f724bf5",
+              "leftValue": "={{ $json.acao }}",
+              "rightValue": "filtrar",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1240,
+        700
+      ],
+      "id": "e8e7f326-3222-4be1-b6dc-e65650f827c0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o texto JSON do campo \"output\"\nlet resposta = $json.output || '';\n\ntry {\n  resposta = resposta.trim();\n  // Se vier como array\n  if (resposta.startsWith('[')) {\n    return JSON.parse(resposta).map(obj => ({ json: obj }));\n  }\n  // Se vier como objeto\n  if (resposta.startsWith('{')) {\n    return [{ json: JSON.parse(resposta) }];\n  }\n  throw new Error('Formato inesperado da resposta da IA');\n} catch (e) {\n  throw new Error('Falha ao fazer parse do JSON da IA: ' + e.message);\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        720
+      ],
+      "id": "f840a42c-16d2-45eb-8d43-009c5d69f7c3",
+      "name": "Parse Json IA"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "114d9f42-0670-4a3f-a2be-665cf095a8d0",
+              "name": "comando",
+              "value": "A pessoa de ID 204 troca a moeda para monero",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        720
+      ],
+      "id": "6613fff7-3a89-4dd4-86b4-b2cd8aea082a",
+      "name": "Comando"
+    },
+    {
+      "parameters": {
+        "resource": "assistant",
+        "operation": "create",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "name": "Assistente Interpretador",
+        "description": "Interpretar comando sobre uma planilha de pessoas.",
+        "instructions": "Você é um agente de automação que interpreta comandos em linguagem natural para manipular dados de uma planilha.\nSempre responda SOMENTE com um objeto JSON válido, sem comentários ou explicações.\nAnalise o comando do usuário e retorne os parâmetros estruturados conforme o tipo de ação solicitada.\n\n1. Para comandos de atualização de dados (ex: “A pessoa de ID 202 troca o carro para Honda”):\n\n{\n  \"acao\": \"atualizar\",\n  \"criterio\": \"ID\", // ou \"Nome\", \"Cidade\", \"Skill\", etc.\n  \"valorBusca\": \"202\",\n  \"campoAtualizar\": \"Car\",\n  \"novoValor\": \"Honda\"\n}\n\n2. Para comandos de filtro (busca/listagem) (ex: “Quais pessoas têm conhecimento em JavaScript e moram em São Paulo?”):\n{\n  \"acao\": \"filtrar\",\n  \"skill\": \"JavaScript\",\n  \"cidade\": \"São Paulo\"\n}\n\n3. Para comandos de adicionar skill (ex: “Adicione Excel para Amanda”):\n\n{\n  \"acao\": \"adicionar_skill\",\n  \"nome\": \"Amanda\",\n  \"skill\": \"Excel\"\n}\n\n4. Para comandos de remover skill (ex: “Remova Zapier de todos”):\n\n{\n  \"acao\": \"remover_skill\",\n  \"skill\": \"Zapier\"\n}\n\nSe não conseguir extrair parâmetros, retorne:\n{ \"erro\": \"Comando não reconhecido\" }\n\nIMPORTANTE:  \nNunca use nomes de campos iguais aos da planilha (exemplo: \"Car\", \"Skills\", \"City of Origin\") nos parâmetros do comando.  \nSempre use \"carro\", \"skill\", \"cidade\" (em minúsculo e em português) para os parâmetros do comando.\nMoeda é igual a ao dado Currency, e cotação é Price.\n\nFrase: {{$json[\"comando\"]}}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        160,
+        720
+      ],
+      "id": "0da1b1d9-f20f-49b7-ad92-c27004958788",
+      "name": "Criar um assistente IA",
+      "credentials": {
+        "openAiApi": {
+          "id": "4mGgHRrYaSOtqIef",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "assistant",
+        "assistantId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "prompt": "define",
+        "text": "={{ $('Comando').item.json.comando }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        320,
+        720
+      ],
+      "id": "d4b6344e-8ffe-4065-877f-d589648bc56a",
+      "name": "Retornar parâmetros",
+      "credentials": {
+        "openAiApi": {
+          "id": "4mGgHRrYaSOtqIef",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "A1:G7"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        860,
+        580
+      ],
+      "id": "5c4319cf-ba05-4b3f-bc44-79c18cd29f8a",
+      "name": "Obter linha(s) na planilha",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1060,
+        700
+      ],
+      "id": "db57aee7-6edd-4f1b-bf44-3e616e9a2c30",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst parametros = items[items.length - 1].json;\nconst linhas = items.slice(0, items.length - 1);\n\nlet criterio = parametros.criterio || '';\nlet valorBusca = parametros.valorBusca || '';\nlet campoAtualizar = parametros.campoAtualizar || '';\nlet novoValor = parametros.novoValor || '';\n\nif (parametros.acao === 'adicionar_skill' || parametros.acao === 'remover_skill') {\n  if (parametros.valorBusca && parametros.criterio) {\n    criterio = parametros.criterio;\n    valorBusca = parametros.valorBusca;\n  } else if (parametros.nome) {\n    criterio = 'nome';\n    valorBusca = parametros.nome;\n  } else if (parametros.id) {\n    criterio = 'id';\n    valorBusca = parametros.id;\n  }\n  campoAtualizar = 'Skills';\n  novoValor = parametros.skill || '';\n}\n\nconst traducoes = {\n  \"carro\": \"Car\",\n  \"nome\": \"Name\",\n  \"cidade de origem\": \"City of Origin\",\n  \"skills\": \"Skills\",\n  \"cidade\": \"City of Origin\"\n};\n\nconst nomeColuna = traducoes[campoAtualizar.toLowerCase()] || campoAtualizar;\n\n// Adicionar skill a todos se não houver critério\nif (parametros.acao === 'adicionar_skill' && !criterio && !valorBusca) {\n  let resultados = [];\n  for (let i = 0; i < linhas.length; i++) {\n    const registro = linhas[i].json;\n    let skillsAtuais = (registro.Skills || '')\n      .split(',')\n      .map(s => s.trim())\n      .filter(Boolean);\n\n    // Adiciona skill apenas se não existir (case-insensitive)\n    if (!skillsAtuais.map(s => s.toLowerCase()).includes(novoValor.toLowerCase())) {\n      skillsAtuais.push(novoValor);\n    }\n\n    // Garante que não fique apenas uma vírgula\n    const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n    resultados.push({\n      json: {\n        row_number: i + 2,\n        Skills: skillsStr\n      }\n    });\n  }\n  return resultados;\n}\n\n// Remover skill de todos se não houver critério\nif (parametros.acao === 'remover_skill' && !criterio && !valorBusca) {\n  let resultados = [];\n  for (let i = 0; i < linhas.length; i++) {\n    const registro = linhas[i].json;\n    let skillsAtuais = (registro.Skills || '')\n      .split(',')\n      .map(s => s.trim())\n      .filter(Boolean);\n\n    // Remove a skill (case-insensitive)\n    skillsAtuais = skillsAtuais.filter(\n      s => s.toLowerCase() !== novoValor.toLowerCase()\n    );\n\n    const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n    resultados.push({\n      json: {\n        row_number: i + 2,\n        Skills: skillsStr\n      }\n    });\n  }\n  return resultados;\n}\n\n// Busca por registro específico\nlet linhaEncontrada = null;\nlet registroEncontrado = null;\n\nfor (let i = 0; i < linhas.length; i++) {\n  const registro = linhas[i].json;\n  if (criterio.toLowerCase() === \"id\" && String(registro.ID) === String(valorBusca)) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n  if (\n    criterio.toLowerCase() === \"nome\" &&\n    registro[\"Name\"] &&\n    registro[\"Name\"].toLowerCase().includes(valorBusca.toLowerCase())\n  ) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n  if (criterio.toLowerCase() === \"cidade\" && registro[\"City of Origin\"] === valorBusca) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n  if (criterio.toLowerCase() === \"skill\" && registro.Skills && registro.Skills.includes(valorBusca)) {\n    linhaEncontrada = i + 2;\n    registroEncontrado = registro;\n    break;\n  }\n}\n\nif (linhaEncontrada === null && (criterio || valorBusca)) {\n  throw new Error('Registro não encontrado');\n}\n\n// Lógica especial para remover skill de um registro específico\nif (parametros.acao === 'remover_skill' && registroEncontrado) {\n  let skillsAtuais = (registroEncontrado.Skills || '')\n    .split(',')\n    .map(s => s.trim())\n    .filter(Boolean);\n\n  skillsAtuais = skillsAtuais.filter(\n    s => s.toLowerCase() !== novoValor.toLowerCase()\n  );\n\n  const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n  return [{\n    json: {\n      row_number: linhaEncontrada,\n      Skills: skillsStr\n    }\n  }];\n}\n\n// Lógica para adicionar skill de um registro específico\nif (parametros.acao === 'adicionar_skill' && registroEncontrado) {\n  let skillsAtuais = (registroEncontrado.Skills || '')\n    .split(',')\n    .map(s => s.trim())\n    .filter(Boolean);\n\n  if (!skillsAtuais.map(s => s.toLowerCase()).includes(novoValor.toLowerCase())) {\n    skillsAtuais.push(novoValor);\n  }\n\n  const skillsStr = skillsAtuais.filter(Boolean).join(', ');\n\n  return [{\n    json: {\n      row_number: linhaEncontrada,\n      Skills: skillsStr\n    }\n  }];\n}\n\n// Para as outras ações, mantém o padrão\nif (linhaEncontrada !== null) {\n  let resultado = {\n    row_number: linhaEncontrada\n  };\n  resultado[nomeColuna] = novoValor;\n  return [{ json: resultado }];\n}\n\n// Caso não caia em nenhum dos casos acima, retorna erro\nthrow new Error('Ação não reconhecida ou parâmetros insuficientes');\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        820
+      ],
+      "id": "97c93a57-3967-42e2-b15e-c092cd91af0f",
+      "name": "Localizar linha para atualização"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Car",
+              "displayName": "Car",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1620,
+        820
+      ],
+      "id": "147f0715-aec0-47dc-8452-45f673a79de6",
+      "name": "Atualizar",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst resultados = [];\n\n// Para cada registro da planilha, já enriquecido com os parâmetros do comando:\nfor (let i = 0; i < items.length; i++) {\n  const registro = items[i].json;\n\n  // Parâmetros do comando (vindos do Merge)\n  const skill = (registro.skill || '').toLowerCase().trim();\n  const cidade = (registro.cidade || '').toLowerCase().trim();\n  const carro = (registro.carro || '').toLowerCase().trim();\n\n  // Dados reais da planilha\n  const skills = (registro.Skills || '')\n    .split(',')\n    .map(s => s.trim().toLowerCase());\n  const cidadeLinha = (registro['City of Origin'] || '').toLowerCase().trim();\n  const carroLinha = (registro.Car || '').toLowerCase().trim();\n\n  // Filtro dinâmico: só retorna se todos os critérios preenchidos forem atendidos\n  if (\n    (!skill || skills.includes(skill)) &&\n    (!cidade || cidadeLinha === cidade) &&\n    (!carro || carroLinha === carro)\n  ) {\n    resultados.push(registro);\n  }\n}\n\nreturn resultados.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        600
+      ],
+      "id": "07e5f356-75cb-48ce-a423-3b5247347933",
+      "name": "Filtrar"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "MinhaTabela"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1800,
+        820
+      ],
+      "id": "bdf24d0b-6215-4c15-b8f6-58de13e45638",
+      "name": "Obter Planilha Atualizada",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.coingecko.com/api/v3/simple/price?ids={{ $json[\"Currency\"].toLowerCase() }}&vs_currencies=brl&x_cg_demo_api_key=CG-ysmCHiNbHmHmdXk9XD5csPum",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2040,
+        700
+      ],
+      "id": "e08776da-24a9-4f61-9592-f8efea28da99",
+      "name": "API CoinGecko"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058",
+          "mode": "list",
+          "cachedResultName": "Google Sheets AI Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQRfXAqiGPzdAei25H41hLXsI9nOjf30yX0BROME058/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Price": "={{ $json.Price }}",
+            "row_number": "={{ $json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Car",
+              "displayName": "Car",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "City of Origin",
+              "displayName": "City of Origin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Skills",
+              "displayName": "Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Price",
+              "displayName": "Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2600,
+        800
+      ],
+      "id": "75ffe21b-5ad9-401e-9ed1-1f3d3a523bbb",
+      "name": "Atualizar moedas",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7LjYjGxRhT0I69Ex",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const moeda = item.json.Currency.toLowerCase();\n  const price = item.json[moeda] && item.json[moeda].brl ? item.json[moeda].brl : 0;\n\n  return {\n    json: {\n      row_number: item.json.row_number,\n      Price: price\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        800
+      ],
+      "id": "19241fd8-ac24-4854-b94f-c5650db25e3c",
+      "name": "Atualização de preço"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2820,
+        600
+      ],
+      "id": "4e601311-ad99-4d8d-acae-f594fb0740af",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2260,
+        800
+      ],
+      "id": "d32de914-5193-4d6f-b45a-70bf64d72a47",
+      "name": "Merge moedas"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Comando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Filtrar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Localizar linha para atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Json IA": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Obter linha(s) na planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comando": {
+      "main": [
+        [
+          {
+            "node": "Criar um assistente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar um assistente IA": {
+      "main": [
+        [
+          {
+            "node": "Retornar parâmetros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retornar parâmetros": {
+      "main": [
+        [
+          {
+            "node": "Parse Json IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter linha(s) na planilha": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Localizar linha para atualização": {
+      "main": [
+        [
+          {
+            "node": "Atualizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar": {
+      "main": [
+        [
+          {
+            "node": "Obter Planilha Atualizada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter Planilha Atualizada": {
+      "main": [
+        [
+          {
+            "node": "API CoinGecko",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge moedas",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "API CoinGecko": {
+      "main": [
+        [
+          {
+            "node": "Merge moedas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar moedas": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualização de preço": {
+      "main": [
+        [
+          {
+            "node": "Atualizar moedas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge moedas": {
+      "main": [
+        [
+          {
+            "node": "Atualização de preço",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "159acb15-bfc3-40ea-b8db-6ff184310982",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "945effe9dd5be61e272acfc7428e6bb1a0438abc3f3f31668cbb60378ec2b2ac"
+  },
+  "id": "AMLGgrfuSs3Pu3xn",
+  "tags": []
+}
+    },
+    "Atualizar moedas": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualização de preço": {
+      "main": [
+        [
+          {
+            "node": "Atualizar moedas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge moedas": {
+      "main": [
+        [
+          {
+            "node": "Atualização de preço",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "159acb15-bfc3-40ea-b8db-6ff184310982",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "945effe9dd5be61e272acfc7428e6bb1a0438abc3f3f31668cbb60378ec2b2ac"
+  },
+  "id": "AMLGgrfuSs3Pu3xn",
+  "tags": []
+}
